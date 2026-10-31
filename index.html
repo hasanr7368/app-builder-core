@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AppBuilder Studio</title>
+  <title>AppBuilder Studio v0.3</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
@@ -15,8 +15,9 @@
       <span class="font-bold text-lg tracking-wide">AppBuilder <span class="text-emerald-400">Core</span></span>
     </div>
     <div class="flex items-center gap-2">
+      <button id="settingsBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded transition">⚙️ Key</button>
       <button id="exportBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 rounded transition">Export HTML</button>
-      <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">v0.2</span>
+      <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">v0.3</span>
     </div>
   </header>
 
@@ -26,7 +27,7 @@
     <!-- Controls Card -->
     <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 shadow-lg">
       <div class="flex justify-between items-center mb-2">
-        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Prompt to App</label>
+        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">AI Prompt Engine</label>
         <div class="flex gap-2 text-xs">
           <button id="viewPromptTab" class="text-emerald-400 font-semibold border-b border-emerald-400">Prompt</button>
           <button id="viewSchemaTab" class="text-slate-400 hover:text-slate-200">Schema JSON</button>
@@ -35,7 +36,7 @@
 
       <!-- Mode 1: Natural Language Input -->
       <div id="promptBoxArea">
-        <textarea id="promptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="e.g. Create an expense calculator or quiz app..."></textarea>
+        <textarea id="promptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="Describe any app (e.g. Budget tracker, Quiz app, Fitness routine)..."></textarea>
       </div>
 
       <!-- Mode 2: Direct JSON Schema -->
@@ -44,15 +45,17 @@
       </div>
       
       <div class="mt-3 flex justify-between items-center">
-        <button id="sampleBtn" class="text-xs text-emerald-400 hover:underline">Load Sample</button>
-        <button id="renderBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md">Build App</button>
+        <button id="sampleBtn" class="text-xs text-emerald-400 hover:underline">Sample: Habit App</button>
+        <button id="renderBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-4 py-2 rounded-lg transition active:scale-95 shadow-md flex items-center gap-1">
+          <span id="btnIcon">✨</span> <span id="btnText">Generate App</span>
+        </button>
       </div>
     </div>
 
     <!-- Live Preview Card -->
     <div class="flex-1 bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex flex-col shadow-lg">
       <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-700">
-        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Mobile Preview</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Interactive Preview</span>
         <span id="statusBadge" class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">Ready</span>
       </div>
       <div class="flex-1 min-h-[380px] bg-white rounded-lg overflow-hidden border border-slate-600">
@@ -70,19 +73,22 @@
     const viewPromptTab = document.getElementById('viewPromptTab');
     const viewSchemaTab = document.getElementById('viewSchemaTab');
     const renderBtn = document.getElementById('renderBtn');
+    const btnText = document.getElementById('btnText');
     const sampleBtn = document.getElementById('sampleBtn');
     const exportBtn = document.getElementById('exportBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
     const previewFrame = document.getElementById('previewFrame');
     const statusBadge = document.getElementById('statusBadge');
 
     let currentSchema = {
-      title: "Daily Study Tracker",
+      title: "Daily Habit Tracker",
       components: [
-        { type: "header", text: "Target Goals" },
-        { type: "badge", text: "Mode: Intense Prep", color: "bg-amber-100 text-amber-800" },
-        { type: "task", text: "Science NCERT Revision", done: true },
-        { type: "task", text: "Speed Math Practice", done: false },
-        { type: "button", text: "+ Add Custom Milestone" }
+        { type: "header", text: "Morning Routine" },
+        { type: "badge", text: "Streak: 5 Days", color: "bg-emerald-100 text-emerald-800" },
+        { type: "task", text: "Morning Run (2 km)", done: true },
+        { type: "task", text: "Speed Math Session", done: false },
+        { type: "input", placeholder: "Enter new habit...", actionText: "Add" },
+        { type: "button", text: "Finish Day" }
       ]
     };
 
@@ -98,18 +104,37 @@
 <body class="p-4 bg-slate-50 text-slate-900 font-sans min-h-screen">
   <div class="max-w-md mx-auto space-y-3">
     <h1 class="text-xl font-bold text-slate-900 border-b pb-2">${schema.title}</h1>
+    <div id="componentList" class="space-y-3">
     ${schema.components.map(comp => {
       if (comp.type === 'header') return `<h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider pt-2">${comp.text}</h2>`;
       if (comp.type === 'badge') return `<span class="inline-block text-xs px-2.5 py-1 rounded font-medium ${comp.color}">${comp.text}</span>`;
       if (comp.type === 'task') return `
         <div class="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 shadow-sm">
-          <input type="checkbox" ${comp.done ? 'checked' : ''} class="rounded text-emerald-600">
+          <input type="checkbox" ${comp.done ? 'checked' : ''} onchange="this.nextElementSibling.classList.toggle('line-through'); this.nextElementSibling.classList.toggle('text-slate-400');" class="rounded text-emerald-600">
           <span class="text-sm ${comp.done ? 'line-through text-slate-400' : 'text-slate-700'}">${comp.text}</span>
         </div>`;
-      if (comp.type === 'button') return `<button onclick="alert('Action Triggered!')" class="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm shadow hover:bg-emerald-700 active:scale-95 transition">${comp.text}</button>`;
+      if (comp.type === 'input') return `
+        <div class="flex gap-2">
+          <input id="itemInput" type="text" placeholder="${comp.placeholder || 'Type here...'}" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm">
+          <button onclick="addItem()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium">${comp.actionText || 'Add'}</button>
+        </div>`;
+      if (comp.type === 'button') return `<button onclick="alert('Done!')" class="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm shadow hover:bg-emerald-700 active:scale-95 transition">${comp.text}</button>`;
       return '';
     }).join('')}
+    </div>
   </div>
+  <script>
+    function addItem() {
+      const inp = document.getElementById('itemInput');
+      if(!inp || !inp.value.trim()) return;
+      const list = document.getElementById('componentList');
+      const div = document.createElement('div');
+      div.className = "flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 shadow-sm";
+      div.innerHTML = '<input type="checkbox" onchange="this.nextElementSibling.classList.toggle(\\'line-through\\'); this.nextElementSibling.classList.toggle(\\'text-slate-400\\');" class="rounded text-emerald-600"><span class="text-sm text-slate-700">' + inp.value + '</span>';
+      list.insertBefore(div, inp.parentElement);
+      inp.value = '';
+    }
+  <\/script>
 </body>
 </html>`;
     }
@@ -130,6 +155,15 @@
       }, 200);
     }
 
+    settingsBtn.addEventListener('click', () => {
+      const existingKey = localStorage.getItem('GEMINI_API_KEY') || '';
+      const key = prompt("Enter your free Google Gemini API Key (Optional):\\n\\nLeave blank to use client-side smart parser.", existingKey);
+      if (key !== null) {
+        localStorage.setItem('GEMINI_API_KEY', key.trim());
+        alert(key.trim() ? "Gemini Key Saved Locally!" : "Cleared. Using Local Smart Parser.");
+      }
+    });
+
     viewPromptTab.addEventListener('click', () => {
       promptBoxArea.classList.remove('hidden');
       schemaBoxArea.classList.add('hidden');
@@ -145,32 +179,88 @@
     });
 
     sampleBtn.addEventListener('click', () => {
-      promptInput.value = "Create a Study Tracker with goals, badges, and milestones.";
+      promptInput.value = "Create a Daily Habit Tracker with checkboxes, input to add habits, and streaks.";
       renderApp(currentSchema);
     });
 
-    renderBtn.addEventListener('click', () => {
+    async function callGeminiAPI(apiKey, promptText) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const systemInstruction = `You are an AI App Specification Engine. Output ONLY valid raw JSON without markdown formatting or codeblocks.
+Return JSON with this structure:
+{
+  "title": "Short App Title",
+  "components": [
+    { "type": "header", "text": "Section Name" },
+    { "type": "badge", "text": "Badge Text", "color": "bg-emerald-100 text-emerald-800" },
+    { "type": "task", "text": "Task or Item label", "done": false },
+    { "type": "input", "placeholder": "Field placeholder...", "actionText": "Add" },
+    { "type": "button", "text": "Action Button" }
+  ]
+}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemInstruction}\\n\\nCreate an app schema for: ${promptText}` }] }]
+        })
+      });
+
+      if (!res.ok) throw new Error("API call failed with status: " + res.status);
+      const data = await res.json();
+      let rawText = data.candidates[0].content.parts[0].text;
+      rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(rawText);
+    }
+
+    renderBtn.addEventListener('click', async () => {
       if (!schemaBoxArea.classList.contains('hidden')) {
         try {
           const parsed = JSON.parse(schemaInput.value);
           renderApp(parsed);
         } catch (e) {
-          alert("Invalid JSON Schema format: " + e.message);
+          alert("Invalid JSON: " + e.message);
+        }
+        return;
+      }
+
+      const text = promptInput.value.trim();
+      const apiKey = localStorage.getItem('GEMINI_API_KEY');
+
+      if (apiKey && text) {
+        statusBadge.textContent = "AI Generating...";
+        statusBadge.className = "text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded";
+        btnText.textContent = "Processing...";
+        renderBtn.disabled = true;
+
+        try {
+          const aiSchema = await callGeminiAPI(apiKey, text);
+          renderApp(aiSchema);
+        } catch (err) {
+          alert("Gemini error, fallback to local parser: " + err.message);
+          renderLocalFallback(text);
+        } finally {
+          btnText.textContent = "Generate App";
+          renderBtn.disabled = false;
         }
       } else {
-        const text = promptInput.value.trim();
-        const dynamicSchema = {
-          title: text ? text.slice(0, 30) : "Dynamic Custom App",
-          components: [
-            { type: "header", text: "App Components" },
-            { type: "badge", text: "Platform: Client-Side", color: "bg-blue-100 text-blue-800" },
-            { type: "task", text: text || "Sample generated task", done: false },
-            { type: "button", text: "Execute Action" }
-          ]
-        };
-        renderApp(dynamicSchema);
+        renderLocalFallback(text);
       }
     });
+
+    function renderLocalFallback(text) {
+      const dynamicSchema = {
+        title: text ? text.slice(0, 30) : "Custom Quick App",
+        components: [
+          { type: "header", text: "Generated Components" },
+          { type: "badge", text: "Mode: Instant Local", color: "bg-blue-100 text-blue-800" },
+          { type: "task", text: text || "Custom generated entry", done: false },
+          { type: "input", placeholder: "Add another item...", actionText: "Save" },
+          { type: "button", text: "Submit Action" }
+        ]
+      };
+      renderApp(dynamicSchema);
+    }
 
     exportBtn.addEventListener('click', () => {
       const code = generateFullHtml(currentSchema);
