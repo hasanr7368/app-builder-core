@@ -14,16 +14,34 @@
       <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
       <span class="font-bold text-lg tracking-wide">AppBuilder <span class="text-emerald-400">Core</span></span>
     </div>
-    <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">v0.1 MVP</span>
+    <div class="flex items-center gap-2">
+      <button id="exportBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40 px-2.5 py-1 rounded transition">Export HTML</button>
+      <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700">v0.2</span>
+    </div>
   </header>
 
   <!-- Main Container -->
   <main class="flex-1 p-4 max-w-xl mx-auto w-full flex flex-col gap-4">
     
-    <!-- Prompt Input Card -->
+    <!-- Controls Card -->
     <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 shadow-lg">
-      <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Prompt to App</label>
-      <textarea id="promptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="e.g. Create a Task Tracker with title, priority badge, and button..."></textarea>
+      <div class="flex justify-between items-center mb-2">
+        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Prompt to App</label>
+        <div class="flex gap-2 text-xs">
+          <button id="viewPromptTab" class="text-emerald-400 font-semibold border-b border-emerald-400">Prompt</button>
+          <button id="viewSchemaTab" class="text-slate-400 hover:text-slate-200">Schema JSON</button>
+        </div>
+      </div>
+
+      <!-- Mode 1: Natural Language Input -->
+      <div id="promptBoxArea">
+        <textarea id="promptInput" rows="3" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="e.g. Create an expense calculator or quiz app..."></textarea>
+      </div>
+
+      <!-- Mode 2: Direct JSON Schema -->
+      <div id="schemaBoxArea" class="hidden">
+        <textarea id="schemaInput" rows="5" class="w-full font-mono bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-emerald-300 focus:outline-none focus:border-emerald-500 transition"></textarea>
+      </div>
       
       <div class="mt-3 flex justify-between items-center">
         <button id="sampleBtn" class="text-xs text-emerald-400 hover:underline">Load Sample</button>
@@ -37,7 +55,7 @@
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Live Mobile Preview</span>
         <span id="statusBadge" class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">Ready</span>
       </div>
-      <div class="flex-1 min-h-[340px] bg-white rounded-lg overflow-hidden border border-slate-600">
+      <div class="flex-1 min-h-[380px] bg-white rounded-lg overflow-hidden border border-slate-600">
         <iframe id="previewFrame" class="w-full h-full border-0"></iframe>
       </div>
     </div>
@@ -46,80 +64,125 @@
 
   <script>
     const promptInput = document.getElementById('promptInput');
+    const schemaInput = document.getElementById('schemaInput');
+    const promptBoxArea = document.getElementById('promptBoxArea');
+    const schemaBoxArea = document.getElementById('schemaBoxArea');
+    const viewPromptTab = document.getElementById('viewPromptTab');
+    const viewSchemaTab = document.getElementById('viewSchemaTab');
     const renderBtn = document.getElementById('renderBtn');
     const sampleBtn = document.getElementById('sampleBtn');
+    const exportBtn = document.getElementById('exportBtn');
     const previewFrame = document.getElementById('previewFrame');
     const statusBadge = document.getElementById('statusBadge');
 
-    const sampleSchema = {
-      title: "Daily Tasks",
+    let currentSchema = {
+      title: "Daily Study Tracker",
       components: [
-        { type: "header", text: "My Priority Checklist" },
-        { type: "badge", text: "Status: Active", color: "bg-emerald-100 text-emerald-800" },
-        { type: "task", text: "Complete Railway GS Revision", done: false },
-        { type: "task", text: "Update AppBuilder Core Code", done: true },
-        { type: "button", text: "+ Add New Item" }
+        { type: "header", text: "Target Goals" },
+        { type: "badge", text: "Mode: Intense Prep", color: "bg-amber-100 text-amber-800" },
+        { type: "task", text: "Science NCERT Revision", done: true },
+        { type: "task", text: "Speed Math Practice", done: false },
+        { type: "button", text: "+ Add Custom Milestone" }
       ]
     };
 
+    function generateFullHtml(schema) {
+      return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${schema.title}</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="p-4 bg-slate-50 text-slate-900 font-sans min-h-screen">
+  <div class="max-w-md mx-auto space-y-3">
+    <h1 class="text-xl font-bold text-slate-900 border-b pb-2">${schema.title}</h1>
+    ${schema.components.map(comp => {
+      if (comp.type === 'header') return `<h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider pt-2">${comp.text}</h2>`;
+      if (comp.type === 'badge') return `<span class="inline-block text-xs px-2.5 py-1 rounded font-medium ${comp.color}">${comp.text}</span>`;
+      if (comp.type === 'task') return `
+        <div class="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <input type="checkbox" ${comp.done ? 'checked' : ''} class="rounded text-emerald-600">
+          <span class="text-sm ${comp.done ? 'line-through text-slate-400' : 'text-slate-700'}">${comp.text}</span>
+        </div>`;
+      if (comp.type === 'button') return `<button onclick="alert('Action Triggered!')" class="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm shadow hover:bg-emerald-700 active:scale-95 transition">${comp.text}</button>`;
+      return '';
+    }).join('')}
+  </div>
+</body>
+</html>`;
+    }
+
     function renderApp(schema) {
+      currentSchema = schema;
+      schemaInput.value = JSON.stringify(schema, null, 2);
+      
       statusBadge.textContent = "Rendering...";
       statusBadge.className = "text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded";
 
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <script src="https://cdn.tailwindcss.com"><\/script>
-        </head>
-        <body class="p-4 bg-slate-50 text-slate-900 font-sans">
-          <div class="max-w-md mx-auto space-y-3">
-            <h1 class="text-xl font-bold text-slate-900">${schema.title}</h1>
-            ${schema.components.map(comp => {
-              if (comp.type === 'header') return `<h2 class="text-sm font-semibold text-slate-500 uppercase">${comp.text}</h2>`;
-              if (comp.type === 'badge') return `<span class="inline-block text-xs px-2.5 py-1 rounded font-medium ${comp.color}">${comp.text}</span>`;
-              if (comp.type === 'task') return `
-                <div class="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 shadow-sm">
-                  <input type="checkbox" ${comp.done ? 'checked' : ''} class="rounded text-emerald-600">
-                  <span class="text-sm ${comp.done ? 'line-through text-slate-400' : 'text-slate-700'}">${comp.text}</span>
-                </div>`;
-              if (comp.type === 'button') return `<button class="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm shadow hover:bg-emerald-700">${comp.text}</button>`;
-              return '';
-            }).join('')}
-          </div>
-        </body>
-        </html>
-      `;
-
+      const htmlContent = generateFullHtml(schema);
       previewFrame.srcdoc = htmlContent;
+
       setTimeout(() => {
         statusBadge.textContent = "Live";
         statusBadge.className = "text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded";
-      }, 300);
+      }, 200);
     }
 
+    viewPromptTab.addEventListener('click', () => {
+      promptBoxArea.classList.remove('hidden');
+      schemaBoxArea.classList.add('hidden');
+      viewPromptTab.className = "text-emerald-400 font-semibold border-b border-emerald-400";
+      viewSchemaTab.className = "text-slate-400 hover:text-slate-200";
+    });
+
+    viewSchemaTab.addEventListener('click', () => {
+      schemaBoxArea.classList.remove('hidden');
+      promptBoxArea.classList.add('hidden');
+      viewSchemaTab.className = "text-emerald-400 font-semibold border-b border-emerald-400";
+      viewPromptTab.className = "text-slate-400 hover:text-slate-200";
+    });
+
     sampleBtn.addEventListener('click', () => {
-      promptInput.value = "Create a task tracker with status badges and action items.";
-      renderApp(sampleSchema);
+      promptInput.value = "Create a Study Tracker with goals, badges, and milestones.";
+      renderApp(currentSchema);
     });
 
     renderBtn.addEventListener('click', () => {
-      const text = promptInput.value.trim();
-      const dynamicSchema = {
-        title: text ? text.slice(0, 25) : "Quick Generated App",
-        components: [
-          { type: "header", text: "Generated View" },
-          { type: "badge", text: "Runtime: In-Browser", color: "bg-blue-100 text-blue-800" },
-          { type: "task", text: text || "Default Generated Component", done: false },
-          { type: "button", text: "Trigger Action" }
-        ]
-      };
-      renderApp(dynamicSchema);
+      if (!schemaBoxArea.classList.contains('hidden')) {
+        try {
+          const parsed = JSON.parse(schemaInput.value);
+          renderApp(parsed);
+        } catch (e) {
+          alert("Invalid JSON Schema format: " + e.message);
+        }
+      } else {
+        const text = promptInput.value.trim();
+        const dynamicSchema = {
+          title: text ? text.slice(0, 30) : "Dynamic Custom App",
+          components: [
+            { type: "header", text: "App Components" },
+            { type: "badge", text: "Platform: Client-Side", color: "bg-blue-100 text-blue-800" },
+            { type: "task", text: text || "Sample generated task", done: false },
+            { type: "button", text: "Execute Action" }
+          ]
+        };
+        renderApp(dynamicSchema);
+      }
     });
 
-    // Initial default render
-    renderApp(sampleSchema);
+    exportBtn.addEventListener('click', () => {
+      const code = generateFullHtml(currentSchema);
+      const blob = new Blob([code], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${currentSchema.title.toLowerCase().replace(/\\s+/g, '-') || 'my-app'}.html`;
+      a.click();
+    });
+
+    // Initial render
+    renderApp(currentSchema);
   </script>
 </body>
 </html>
